@@ -418,7 +418,7 @@ def get_params(name):
              "value":     1.0,
              "bounds":    [0.1, 10.0],
              "priortype": "uniform",
-             "wrap":      0}
+             "wrap":      0},
 
             {"parname":   "RM_idx",
              "label":     "RM_idx",
