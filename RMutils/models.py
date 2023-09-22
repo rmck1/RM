@@ -84,8 +84,8 @@ def get_model(name):
             UArr = QUArr.imag
 
             # model V spectrum (change this to non-zero array to model instrinsic stokes V)
-            VArr = np.zeros_like(lamSqArr_m2)
-
+            VModArr = np.zeros_like(lamSqArr_m2)
+            
             # Model differential X,Y phase leakage
             U_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr - np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr
             V_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr + np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr
@@ -426,7 +426,7 @@ def get_params(name):
              "bounds":    [0.5, 3.5],
              "priortype": "uniform",
              "wrap":      0}
-
+             
         ]
 
     return inParms
