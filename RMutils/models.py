@@ -59,8 +59,6 @@ def get_model(name):
 
         return model
     
-    def get_model(name):
-
     if (name == 'cable_delay+circular'):
 
         def model(pDict, lamSqArr_m2, IModArr):
