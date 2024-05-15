@@ -58,6 +58,41 @@ def get_model(name):
             return QUArr, VArr
 
         return model
+    
+    def get_model(name):
+
+    if (name == 'cable_delay+circular'):
+
+        def model(pDict, lamSqArr_m2, IModArr):
+            """Simple Faraday thin source + differential phase between X,Y polarizations (i.e. U->V leakage)"""
+
+            IModArr[IModArr<0] =  np.nan
+            freqArr=C/np.sqrt(lamSqArr_m2)
+
+            # Calculate linear polarization w/ Stokes I model
+            pArr = pDict["fracPol"] * IModArr
+            # Model Faraday rotation
+            QUArr = pArr * np.exp( 2j * (np.radians(pDict["psi0_deg"]) +
+                                         pDict["RM_radm2"] * lamSqArr_m2) )
+            
+            # Create model V spectrum (change this to non-zero array to model instrinsic stokes V)
+            vfracArr = pDict["fracPol_V"] * np.ones_like(lamSqArr_m2) 
+            VModArr = vfracArr * IModArr
+
+            QArr = QUArr.real
+            UArr = QUArr.imag
+
+            # Model differential X,Y phase leakage
+            U_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr - np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr
+            V_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr + np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr
+            UArr=U_leak
+            VArr=-V_leak
+            
+            QUArr = QArr + 1j*UArr
+
+            return QUArr, VArr
+
+        return model
         
     if (name == 'cable_delay+response'):
 
@@ -239,6 +274,52 @@ def get_params(name):
              "wrap":      1}
         ]
 
+    if (name == 'cable_delay+circular'):
+
+        inParms = [
+            {"parname":   "fracPol",
+             "label":     "$p$",
+             "value":     0.1,
+             "bounds":    [0.001, 1.1],
+             "priortype": "uniform",
+             "wrap":      0},
+
+            {"parname":   "psi0_deg",
+             "label":     "$\psi_0$ (deg)",
+             "value":     0.0,
+             "bounds":    [0.0, 180.0],
+             "priortype": "uniform",
+             "wrap":      1},
+
+            {"parname":   "RM_radm2",
+             "label":     "RM (rad m$^{-2}$)",
+             "value":     0.0,
+             "bounds":    [-5000.0, 5000.0],
+             "priortype": "uniform",
+             "wrap":      0},
+
+            {"parname":   "lag_s",
+             "label":     "lag (sec)",
+             "value":     0.0,
+             "bounds":    [-1e-8, 1e-8],
+             "priortype": "uniform",
+             "wrap":      0},
+             
+            {"parname":   "lag_phi",
+             "label":     "lag_phi (deg.)",
+             "value":     0.0,
+             "bounds":    [0.0, 360.0],
+             "priortype": "uniform",
+             "wrap":      1},
+
+             {"parname":   "fracPol_V",
+             "label":     "$p_V$",
+             "value":     0.0,
+             "bounds":    [-1.0, 1.0],
+             "priortype": "uniform",
+             "wrap":      0}
+        ]
+
     if (name == 'cable_delay+response'):
 
         inParms = [
@@ -333,7 +414,7 @@ def get_params(name):
 
             {"parname":   "fracPol_V",
              "label":     "$p_V$",
-             "value":     0.1,
+             "value":     0.0,
              "bounds":    [-1.0, 1.0],
              "priortype": "uniform",
              "wrap":      0},
