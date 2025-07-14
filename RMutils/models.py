@@ -26,6 +26,41 @@ C = 2.997924538e8 # Speed of light [m/s]
 #-----------------------------------------------------------------------------#
 
 def get_model(name):
+    
+    if (name == 'chime_dsa_joint'):
+
+        def model(pDict, lamSqArr_m2, IModArr):
+
+            IModArr[IModArr<0] =  np.nan
+            freqArr=C/np.sqrt(lamSqArr_m2)
+
+            # Calculate linear polarization w/ Stokes I model
+            pArr = pDict["fracPol"] * IModArr
+            # Model Faraday rotation
+            QUArr = pArr * np.exp( 2j * (np.radians(pDict["psi0_deg"]) +
+                                         pDict["RM_radm2"] * np.sqrt(lamSqArr_m2)**(pDict["RM_index"])) )
+
+            # Apply discontinuous PA jump between CHIME and DSA band
+            freq_cut_mask = freqArr>800e6 
+            QUArr[freq_cut_mask]*=np.exp( 2j * (np.radians(pDict["psi_offset_deg"])))
+
+            # Create model V spectrum (change this to non-zero array to model instrinsic stokes V)
+            VModArr = np.zeros_like(lamSqArr_m2)
+
+            QArr = QUArr.real
+            UArr = QUArr.imag
+
+            # Model differential X,Y phase leakage
+            U_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr - np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr
+            V_leak=np.cos(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*VModArr + np.sin(2*np.pi*freqArr*pDict["lag_s"] + np.radians(pDict["lag_phi"]))*UArr
+            UArr=U_leak
+            VArr=-V_leak
+
+            QUArr = QArr + 1j*UArr
+            
+            return QUArr, VArr
+
+        return model
 
     if (name == 'cable_delay'):
 
@@ -233,6 +268,59 @@ def get_model(name):
 
 def get_params(name):
         
+    if (name == 'chime_dsa_joint'):
+
+        inParms = [
+            {"parname":   "fracPol",
+             "label":     "$p$",
+             "value":     0.1,
+             "bounds":    [0.001, 1.1],
+             "priortype": "uniform",
+             "wrap":      0},
+
+            {"parname":   "psi0_deg",
+             "label":     "$\psi_0$ (deg)",
+             "value":     0.0,
+             "bounds":    [0.0, 180.0],
+             "priortype": "uniform",
+             "wrap":      1},
+
+            {"parname":   "RM_radm2",
+             "label":     "RM (rad m$^{-2}$)",
+             "value":     0.0,
+             "bounds":    [-5000.0, 5000.0],
+             "priortype": "uniform",
+             "wrap":      0},
+            
+            {"parname":   "RM_index",
+             "label":     "RM index1",
+             "value":     2.0,
+             "bounds":    [1.8, 2.2],
+             "priortype": "uniform",
+             "wrap":      0},
+
+            {"parname":   "lag_s",
+             "label":     "lag (sec)",
+             "value":     0.0,
+             "bounds":    [-1e-8, 1e-8],
+             "priortype": "uniform",
+             "wrap":      0},
+             
+            {"parname":   "lag_phi",
+             "label":     "lag_phi (deg.)",
+             "value":     0.0,
+             "bounds":    [0.0, 360.0],
+             "priortype": "uniform",
+             "wrap":      1},
+            
+            {"parname":   "psi_offset_deg",
+             "label":     "$\psi$ (offset) (deg)",
+             "value":     0.0,
+             "bounds":    [0.0, 180.0],
+             "priortype": "uniform",
+             "wrap":      1},
+        ]
+    
     if (name == 'cable_delay'):
 
         inParms = [
